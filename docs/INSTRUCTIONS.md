@@ -8,7 +8,9 @@
 
 ## Run it
 
-Double-click `index.html`, or serve the folder (recommended, so the page behaves exactly as it would online):
+The live site is at <https://amalmehta.github.io/BlackHoleSimulator/>. To run it yourself, double-click `index.html` or serve the folder.
+
+Serving the folder is recommended, so the page behaves exactly as it does online:
 
 ```bash
 python3 -m http.server 8000

@@ -21,6 +21,7 @@ flowchart LR
 
 ## Links
 
+- **[Open the live site](https://amalmehta.github.io/BlackHoleSimulator/)**
 - [Instructions](docs/INSTRUCTIONS.md): set up, run, use
 - [System design](docs/SYSTEM-DESIGN.md): how it works and why
 - [File structure](docs/FILE-STRUCTURE.md): what's where

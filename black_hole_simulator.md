@@ -55,7 +55,7 @@ OPEN QUESTIONS / ASSUMPTIONS:
 Asked and answered (2026-10-06):
 - Platform: website only. The DELIVERABLES field asks for a website, which overrides the "Mac app first" meta-instruction for this project.
 - Physics: exact Schwarzschild (non-spinning). Kerr is out of scope.
-- GitHub: local git only. No remote created, nothing pushed.
+- GitHub: first local only, then (on request) a private repo amalmehta/BlackHoleSimulator, later made public with GitHub Pages.
 
 Decided without asking:
 - Plain static site (HTML/CSS/JS, WebGL 2) with no build step or dependencies. KaTeX from cdnjs typesets the formulas.
@@ -72,6 +72,7 @@ CHANGELOG:
 
 - 2026-10-06 — created
 - 2026-10-06 — built the website: live WebGL ray tracer, math article with interactive figures, settings, feedback tab, tests, README and docs
+- 2026-10-06 — published: public GitHub repo with the site on GitHub Pages
 - 2026-09-15 — added meta-instruction: built-out applications include a small feedback tab
 - 2026-09-15 — added meta-instruction: no "Claude" attribution in commits, PRs, or branches
 - 2026-09-16 — added meta-instruction: always include a README when adding to GitHub
