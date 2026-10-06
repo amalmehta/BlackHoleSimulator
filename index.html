@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Black Hole Simulator</title>
+  <meta name="description" content="A Schwarzschild black hole ray-traced live in your browser, with the math behind every pixel.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#simulator">Black Hole Simulator</a>
+  <nav>
+    <a href="#spacetime">Spacetime</a>
+    <a href="#light">Light</a>
+    <a href="#pixels">Ray tracing</a>
+    <a href="#disk">Disk</a>
+    <a href="#redshift">Redshift</a>
+    <a href="#limits">Limits</a>
+  </nav>
+  <button class="icon-btn" data-action="open-settings" title="Settings (⌘,)" aria-label="Settings">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+    <span>Settings</span>
+  </button>
+</header>
+
+<!-- ======================= live simulator ======================= -->
+<section id="simulator" class="sim">
+  <canvas id="sim" aria-label="Live ray-traced view of a black hole with an accretion disk"></canvas>
+  <div class="sim-overlay">
+    <h1>Black Hole Simulator</h1>
+    <p>A non-spinning black hole, ray-traced live on your GPU. Every pixel follows a real path of light through curved spacetime.</p>
+  </div>
+  <div class="sim-controls">
+    <span class="hint">Drag to orbit · pinch or ⌥-scroll to zoom</span>
+    <button data-action="zoom-in" aria-label="Zoom in">+</button>
+    <button data-action="zoom-out" aria-label="Zoom out">−</button>
+    <button data-action="reset-view">Reset view</button>
+  </div>
+  <div id="hud" class="hud" aria-live="off"></div>
+  <div id="sim-error" class="sim-error" hidden>
+    <p><b>The live view can't run here.</b> <span id="sim-error-text"></span></p>
+    <p>The article below still works. Try a recent Chrome, Safari or Firefox with hardware acceleration on.</p>
+  </div>
+  <a class="scroll-cue" href="#spacetime">How it works ↓</a>
+</section>
+
+<main class="article">
+
+<!-- ======================= 1. spacetime ======================= -->
+<section id="spacetime">
+  <p class="kicker">1 · The spacetime</p>
+  <h2>One equation describes the whole thing</h2>
+  <p>A non-rotating, uncharged black hole of mass $M$ is fully described by the <b>Schwarzschild metric</b>. It gives the interval $ds$ between two nearby events at distance $r$ from the centre:</p>
+  $$ds^2 = -\left(1-\frac{2M}{r}\right)dt^2 + \left(1-\frac{2M}{r}\right)^{-1}dr^2 + r^2\left(d\theta^2 + \sin^2\theta\, d\phi^2\right)$$
+  <p>We use <b>geometric units</b>, $G = c = 1$, and measure every length in units of $M$. In these units a black hole with the mass of the Sun has $M \approx 1.48\ \text{km}$. The whole simulator is scale-free: the picture looks the same for a stellar black hole as for a supermassive one.</p>
+
+  <div class="radii">
+    <div class="radius"><span class="r-val">$2M$</span><span class="r-name">Event horizon</span><p>Where $1-2M/r$ hits zero. Nothing that crosses it comes back.</p></div>
+    <div class="radius"><span class="r-val">$3M$</span><span class="r-name">Photon sphere</span><p>Light can orbit here, balanced on a knife edge. Any nudge sends it in or out.</p></div>
+    <div class="radius"><span class="r-val">$3\sqrt3\,M$</span><span class="r-name">Shadow edge</span><p>The critical impact parameter $b_c \approx 5.196M$. Rays aimed closer than this fall in.</p></div>
+    <div class="radius"><span class="r-val">$6M$</span><span class="r-name">ISCO</span><p>The innermost stable circular orbit. Gas inside it plunges, so the disk ends here.</p></div>
+  </div>
+</section>
+
+<!-- ======================= 2. light ======================= -->
+<section id="light">
+  <p class="kicker">2 · How light moves</p>
+  <h2>Light rolls over a potential hill</h2>
+  <p>Light follows <b>null geodesics</b>, paths with $ds^2 = 0$. The metric doesn't depend on $t$ or $\phi$, so every ray conserves an energy $E$ and an angular momentum $L$. Their ratio is the <b>impact parameter</b> $b = L/E$, the distance by which the ray would miss the centre if space were flat. Keeping the ray in the plane $\theta = \pi/2$, the radial motion reduces to</p>
+  $$\left(\frac{1}{L}\frac{dr}{d\lambda}\right)^2 = \frac{1}{b^2} - V(r), \qquad V(r) = \frac{1}{r^2}\left(1-\frac{2M}{r}\right).$$
+  <p>This reads like a ball rolling toward a hill. The ray can only be where $V(r) \le 1/b^2$. The hill peaks at the photon sphere, $r = 3M$, with height $1/27M^2$. If $1/b^2$ is above the peak ($b &lt; b_c = 3\sqrt3\,M$) the ray goes over the top and falls in. If it's below, the ray reaches a closest approach and heads back out.</p>
+
+  <figure class="figure" id="fig-potential">
+    <div class="fig-head">
+      <div class="legend"><span><i style="background:var(--series-1)"></i>V(r)</span><span><i class="dash" style="--c:var(--series-2)"></i>1/b² for the chosen ray</span><span><i style="background:var(--highlight-solid)"></i>forbidden zone</span></div>
+      <label class="slider">impact parameter b <input id="b-pot" type="range" min="3" max="12" step="0.05" value="6.5"></label>
+    </div>
+    <canvas class="chart"></canvas>
+    <div class="tooltip" hidden></div>
+    <figcaption id="b-pot-out"></figcaption>
+    <details><summary>Data table</summary><table></table></details>
+  </figure>
+
+  <h3>The shape of the bend</h3>
+  <p>Dividing the radial equation by $(d\phi/d\lambda)^2 = L^2/r^4$ and switching to $u = 1/r$ gives an equation for the shape of the orbit, $u(\phi)$:</p>
+  $$\frac{d^2u}{d\phi^2} + u = 3M u^2.$$
+  <p>Without the right-hand side this is a straight line. The $3Mu^2$ term is all of general relativity's effect on light around a non-spinning mass. Below, rays come in from the left at evenly spaced $b$. Orange rays fall in, blue rays escape. Drag the slider toward $b_c$ to watch a ray wrap around the photon sphere before it escapes.</p>
+
+  <figure class="figure" id="fig-rays">
+    <div class="fig-head">
+      <div class="legend"><span><i style="background:var(--series-1)"></i>escapes</span><span><i style="background:var(--series-2)"></i>falls in</span><span><i style="background:var(--text)"></i>chosen ray</span></div>
+      <label class="slider">impact parameter b <input id="b-ray" type="range" min="0.5" max="11" step="0.01" value="6.2"></label>
+      <button class="chip" data-action="snap-bc">Jump to b just above b<sub>c</sub></button>
+    </div>
+    <canvas class="chart tall"></canvas>
+    <div class="tooltip" hidden></div>
+    <figcaption id="b-ray-out"></figcaption>
+  </figure>
+
+  <h3>How much light bends</h3>
+  <p>Integrating the orbit equation from infinity to closest approach $u_0$ and back gives the exact bend:</p>
+  $$\alpha(b) = 2\int_0^{u_0}\frac{du}{\sqrt{1/b^2 - u^2 + 2Mu^3}} - \pi.$$
+  <p>Far from the hole this reduces to Einstein's <b>weak-field</b> result, $\alpha \approx 4M/b$, the value measured during the 1919 solar eclipse. Close in, the weak-field formula is far too low. Near $b_c$ the exact bend grows without limit, like $-\ln(b - b_c)$, and the ray loops around the hole any number of times. That is why a black hole is ringed by thinner and thinner copies of everything behind it.</p>
+
+  <figure class="figure" id="fig-deflect">
+    <div class="fig-head">
+      <div class="legend"><span><i style="background:var(--series-1)"></i>exact (integral)</span><span><i class="dash" style="--c:var(--series-2)"></i>weak field 4M/b</span></div>
+    </div>
+    <canvas class="chart"></canvas>
+    <div class="tooltip" hidden></div>
+    <details><summary>Data table</summary><table></table></details>
+  </figure>
+</section>
+
+<!-- ======================= 3. pixels ======================= -->
+<section id="pixels">
+  <p class="kicker">3 · From one ray to every pixel</p>
+  <h2>A ray for every pixel, every frame</h2>
+  <p>The camera works backwards. Each pixel's ray starts at the camera and is followed back in time to wherever its light came from: the disk, the sky, or the horizon. To do that in ordinary 3D coordinates, we use a neat equivalence. A particle in flat space pulled toward the origin by</p>
+  $$\ddot{\mathbf{x}} = -\,\frac{3M\,h^2}{r^5}\,\mathbf{x}, \qquad \mathbf{h} = \mathbf{x}\times\dot{\mathbf{x}}$$
+  <p>moves on <i>exactly</i> the same curve as a light ray. For any central force, Binet's formula gives $u'' + u = -F/(h^2u^2)$. With $F = -3Mh^2u^4$ that becomes $u'' + u = 3Mu^2$, the orbit equation above. Because the force is central, $\mathbf h$ is conserved. Starting each ray with unit speed makes $|\mathbf h| = b$.</p>
+  <p>The fragment shader integrates this equation with fourth-order <b>Runge–Kutta</b>. The step size is proportional to $r$ and shrinks further near the horizon, so rays skimming the photon sphere get the most steps. On each step:</p>
+  <ol class="steps">
+    <li>If $r &lt; 2M$, the ray came from the horizon, so the pixel stays black.</li>
+    <li>If the step crosses the disk plane $y = 0$ between the inner and outer edge, the hit point is found by linear interpolation and the disk's light is added. The disk is partly transparent, so the ray keeps going and can hit the disk again on the far side of the hole.</li>
+    <li>If the ray is far away and moving outward, it escaped. Its final direction picks a point on the star field.</li>
+  </ol>
+<pre class="code"><code>for (step = 0; step &lt; maxSteps; step++) {
+  r = length(pos);
+  if (r &lt; 2.0) break;                       // horizon
+  if (r &gt; rEscape &amp;&amp; dot(pos, vel) &gt; 0) { escaped = true; break; }
+  dt = stepK * r * clamp((r - 2.0) / 2.0, 0.08, 1.0);
+  rk4(pos, vel, dt);                       // a = -3 h² pos / r⁵
+  if (crossedDiskPlane) addDiskLight();
+}</code></pre>
+  <p class="try">Try it: <button class="chip" data-try="lensing">Toggle lensing</button> to switch the bending off and on. With straight rays you see a flat disk and a small black ball. With lensing, the far side of the disk is lifted above and below the hole, and the shadow grows to $b_c \approx 2.6\times$ the horizon radius.</p>
+</section>
+
+<!-- ======================= 4. disk ======================= -->
+<section id="disk">
+  <p class="kicker">4 · The accretion disk</p>
+  <h2>Hot gas, glowing like a blackbody</h2>
+  <p>Gas orbiting the hole loses energy to friction, spirals inward, and heats up. For a thin disk with no torque at the inner edge, energy balance gives the temperature profile (Shakura–Sunyaev):</p>
+  $$T(r)^4 \;\propto\; \frac{1}{r^3}\left(1 - \sqrt{\frac{r_\text{in}}{r}}\right),$$
+  <p>which is zero at $r_\text{in}$ and peaks at $r = \tfrac{49}{36}\,r_\text{in}$ (about $8.2M$ for a disk ending at the ISCO). Each patch shines as a <b>blackbody</b>. To get its colour, we multiply Planck's spectrum</p>
+  $$B_\lambda(T) \propto \frac{1}{\lambda^5}\,\frac{1}{e^{hc/\lambda k T} - 1}$$
+  <p>by the CIE 1931 colour-matching functions, integrate over visible wavelengths to get XYZ, and convert to linear sRGB. This is computed once into a 256-entry lookup table that the shader reads. Brightness is handled separately: total emitted power goes as $T^4$. The texture is fractal noise carried around at each radius's own orbital speed, $\Omega = \sqrt{M/r^3}$. The inner disk laps the outer disk, which shears the noise into streaks.</p>
+
+  <figure class="figure" id="fig-blackbody">
+    <div class="fig-head"><div class="legend"><span>Blackbody colour against temperature (kelvin, log scale). The marker is the disk's current peak temperature from Settings.</span></div></div>
+    <canvas class="chart strip"></canvas>
+    <div class="tooltip" hidden></div>
+  </figure>
+</section>
+
+<!-- ======================= 5. redshift ======================= -->
+<section id="redshift">
+  <p class="kicker">5 · Redshift and beaming</p>
+  <h2>Why one side is brighter</h2>
+  <p>Light reaching us has been shifted by two effects. Climbing out of the gravity well <b>redshifts</b> it, and the gas's orbital motion (near $0.5c$ at the ISCO) <b>Doppler-shifts</b> it. Both fold into one factor. A disk element on a circular orbit has four-velocity $u^\mu = u^t(1, 0, 0, \Omega)$ with $u^t = (1 - 3M/r)^{-1/2}$. Its energy measured from a photon with $p_\mu = (-E, \dots, L)$ is $-p_\mu u^\mu$. So the ratio of seen to emitted frequency is</p>
+  $$g = \frac{\nu_\text{obs}}{\nu_\text{emit}} = \frac{\sqrt{1 - 3M/r}}{1 - \Omega\, b_z}\cdot\frac{1}{\sqrt{1 - 2M/r_\text{cam}}},$$
+  <p>where $b_z = L_z/E$ is the ray's angular momentum about the disk axis. It is conserved along the ray, so the shader computes it once per pixel from $\mathbf x \times \mathbf v$ at the camera. Because $I_\nu/\nu^3$ is invariant along a ray, total brightness scales as $g^4$ and the apparent temperature as $gT$. That's why the approaching side is bright and blue-white while the receding side is dim and red.</p>
+
+  <figure class="figure" id="fig-redshift">
+    <div class="fig-head">
+      <div class="legend"><span><i style="background:var(--series-1)"></i>approaching side</span><span><i style="background:var(--series-3)"></i>face-on</span><span><i style="background:var(--series-2)"></i>receding side</span></div>
+    </div>
+    <canvas class="chart"></canvas>
+    <div class="tooltip" hidden></div>
+    <figcaption>Shift for light emitted along the orbit (toward or away from a distant observer in the disk plane), or straight up (face-on). The face-on line is pure gravitational and time-dilation redshift.</figcaption>
+    <details><summary>Data table</summary><table></table></details>
+  </figure>
+  <p class="try">Try it: <button class="chip" data-try="doppler" data-view='{"pitch":0.05}'>Toggle Doppler beaming</button> and the disk becomes symmetric. <button class="chip" data-try="gravRedshift">Toggle gravitational redshift</button> and the inner edge gets hotter and brighter.</p>
+</section>
+
+<!-- ======================= 6. picture ======================= -->
+<section id="picture">
+  <p class="kicker">6 · Making the picture</p>
+  <h2>From physical light to screen pixels</h2>
+  <div class="pipeline" role="img" aria-label="Rendering pipeline: ray trace to HDR, bloom, tone map, screen">
+    <div><b>Ray trace</b><span>one ray per pixel → linear HDR light (16-bit float)</span></div>
+    <div><b>Bloom</b><span>bright pass, 3 blurred levels at ½, ¼, ⅛ size</span></div>
+    <div><b>Tone map</b><span>exposure · ACES curve · sRGB · vignette · dither</span></div>
+    <div><b>Screen</b><span>scaled up from the chosen render resolution</span></div>
+  </div>
+  <p>The disk's brightness spans several orders of magnitude, so the scene is rendered in high dynamic range and compressed with the ACES filmic curve. Bloom imitates light scattering in a camera lens or eye. It's an artistic choice, not physics, and you can turn it down in Settings.</p>
+</section>
+
+<!-- ======================= 7. limits ======================= -->
+<section id="limits">
+  <p class="kicker">7 · What's simplified</p>
+  <h2>Known limits</h2>
+  <ul>
+    <li><b>No spin.</b> Real black holes rotate (Kerr metric). Spin flattens one side of the shadow and moves the ISCO.</li>
+    <li><b>The camera is static and its sky is flat.</b> The camera hovers at fixed $r$. The pixel grid is treated as flat directions, without the aberration a real hovering observer would see.</li>
+    <li><b>The disk is geometrically thin and has no thickness, wind or corona.</b> Its brightness is bolometric ($g^4$), and its colour comes from a blackbody at the shifted temperature $gT$.</li>
+    <li><b>The stars are procedural</b>, not a real sky catalogue. Light still escaping at the cut-off radius is treated as already at infinity.</li>
+    <li><b>Rays that run out of steps</b> are counted as captured. Raise "Max ray steps" if you see dark speckles near the photon ring.</li>
+  </ul>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p>Black Hole Simulator · <a href="README.md">README</a> · <a href="docs/INSTRUCTIONS.md">Instructions</a> · <a href="docs/SYSTEM-DESIGN.md">System design</a> · <a href="docs/FILE-STRUCTURE.md">File structure</a></p>
+</footer>
+
+<!-- ======================= settings panel ======================= -->
+<aside id="settings-panel" class="panel settings" hidden aria-label="Settings">
+  <div class="panel-head">
+    <h2>Settings</h2>
+    <span class="shortcut">⌘,</span>
+    <button class="icon-btn" data-action="close" aria-label="Close settings">×</button>
+  </div>
+  <div class="settings-body"></div>
+  <div class="panel-foot"><button data-action="reset">Reset to defaults</button></div>
+</aside>
+
+<!-- ======================= feedback ======================= -->
+<button id="feedback-tab" class="feedback-tab">Feedback</button>
+<aside id="feedback-panel" class="panel feedback" hidden aria-label="Feedback">
+  <div class="panel-head">
+    <h2>Feedback</h2>
+    <button class="icon-btn" data-action="close" aria-label="Close feedback">×</button>
+  </div>
+  <form>
+    <textarea rows="5" placeholder="What worked, what didn't, what you'd like to see…" aria-label="Feedback"></textarea>
+    <div class="row">
+      <button type="submit" class="primary">Save note</button>
+      <button type="button" data-action="download">Download</button>
+      <button type="button" data-action="copy">Copy</button>
+    </div>
+    <p class="feedback-status"></p>
+  </form>
+</aside>
+
+<script src="js/physics.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/feedback.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/app.js"></script>
+<script src="js/figures.js"></script>
+<script>
+  Settings.init();
+  Feedback.init();
+  SimulatorApp.init();
+  Figures.init();
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.querySelector('.article'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'canvas']})"></script>
+</body>
+</html>

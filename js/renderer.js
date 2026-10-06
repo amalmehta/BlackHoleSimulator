@@ -63,31 +63,38 @@
   }
 
   // ---- background sky --------------------------------------------------------
-  vec3 sky(vec3 d, float pix) {
+  // d: escaped direction for this pixel. jx, jy: how d changes per pixel
+  // (screen-space derivatives). Lensing can stretch the pixel's footprint on
+  // the sky a lot, so each star is drawn in *pixel* space: find where the star
+  // sits relative to this pixel, draw a ~1 px dot, and scale its flux by the
+  // lensing magnification (nominal pixel area / footprint area).
+  vec3 sky(vec3 d, vec3 jx, vec3 jy, float pix) {
     if (!uShowStars) return vec3(0.0);
     vec3 col = vec3(0.0);
-    // Three layers of point stars hashed on a 3D grid in direction space.
+    float a = dot(jx, jx), b = dot(jx, jy), c = dot(jy, jy);
+    float det = a * c - b * b;
+    float area = sqrt(max(det, 0.0));
+    float mu = clamp(pix * pix / max(area, 1e-12), 0.0, 25.0);
     for (int l = 0; l < 3; l++) {
       float scale = 90.0 * pow(2.2, float(l));
-      vec3 p = d * scale;
-      vec3 id = floor(p);
-      vec3 f = fract(p) - 0.5;
+      vec3 id = floor(d * scale);
       float h = hash13(id + float(l) * 41.0);
-      if (h > 0.90) {
-        vec3 off = (hash33(id) - 0.5) * 0.7;
-        float sigma = max(0.06, pix * scale * 0.6);
-        float dist = length(f - off);
-        float mag = pow((h - 0.90) / 0.10, 6.0) * 6.0 / (1.0 + float(l));
+      if (h > 0.95 && det > 1e-20) {
+        vec3 star = normalize(id + 0.5 + (hash33(id) - 0.5) * 0.7);
+        vec3 delta = star - d;
+        float r1 = dot(jx, delta), r2 = dot(jy, delta);
+        vec2 px = vec2(c * r1 - b * r2, a * r2 - b * r1) / det;   // offset in pixels
+        float mag = pow((h - 0.95) / 0.05, 10.0) * 2.0 / (1.0 + float(l)) + 0.015;
         float T = mix(3000.0, 14000.0, hash13(id * 1.7 + 3.0));
-        col += blackbody(T) * mag * exp(-dist * dist / (2.0 * sigma * sigma)) * (0.0036 / (sigma * sigma));
+        col += blackbody(T) * mag * mu * exp(-dot(px, px) / (2.0 * 0.55 * 0.55));
       }
     }
     // A faint galactic band.
     vec3 n = normalize(vec3(0.25, 1.0, 0.35));
     float band = exp(-pow(dot(d, n) * 4.0, 2.0));
     float neb = fbm(d * 6.0) * fbm(d * 13.0 + 4.0);
-    col += band * neb * vec3(0.55, 0.45, 0.62) * 0.35;
-    col += band * fbm(d * 30.0) * 0.04 * vec3(0.9, 0.85, 1.0);
+    col += band * neb * vec3(0.50, 0.46, 0.48) * 0.16;
+    col += band * fbm(d * 30.0) * 0.025 * vec3(0.9, 0.88, 0.95);
     return col * uStarBright;
   }
 
@@ -122,12 +129,12 @@
     dens = mix(dens, fbm(vec3(cos(phi) * 7.0, sin(phi) * 7.0, r * 2.4)), 0.35);
     float edgeIn  = smoothstep(uDiskIn, uDiskIn + 0.6, r);
     float edgeOut = 1.0 - smoothstep(uDiskOut * 0.6, uDiskOut, r);
-    float a = clamp((dens - 0.18) * 1.8, 0.0, 1.0) * edgeIn * edgeOut;
+    float a = clamp((dens - 0.2) * 1.6, 0.0, 0.97) * edgeIn * edgeOut;
 
     float Tn = diskTemp(r);
     float Tobs = uTPeak * Tn * g;
-    float I = pow(Tn * g, 4.0) * 2.2;
-    return vec4(blackbody(max(Tobs, 900.0)) * I * (0.4 + dens), a);
+    float I = pow(Tn * g, 4.0) * 0.8;
+    return vec4(blackbody(max(Tobs, 900.0)) * I * (0.35 + 0.65 * dens), a);
   }
 
   void main() {
@@ -174,7 +181,10 @@
       }
       pos = np;
     }
-    if (escaped) col += trans * sky(normalize(vel), pix);
+    // Derivatives are taken outside any branch so they are well defined.
+    vec3 dOut = normalize(vel);
+    vec3 jx = dFdx(dOut), jy = dFdy(dOut);
+    if (escaped) col += trans * sky(dOut, jx, jy, pix);
     frag = vec4(col, 1.0);
   }`;
 
@@ -222,7 +232,7 @@
   void main() {
     vec2 uv = gl_FragCoord.xy / uRes;
     vec3 c = texture(uScene, uv).rgb;
-    vec3 b = texture(uB1, uv).rgb * 0.5 + texture(uB2, uv).rgb * 0.8 + texture(uB3, uv).rgb * 1.2;
+    vec3 b = texture(uB1, uv).rgb * 0.25 + texture(uB2, uv).rgb * 0.35 + texture(uB3, uv).rgb * 0.5;
     c = (c + b * uBloom) * uExposure;
     c = srgb(aces(c));
     vec2 v = uv - 0.5;

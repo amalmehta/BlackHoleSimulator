@@ -52,9 +52,26 @@ OPEN QUESTIONS / ASSUMPTIONS:
 
 <Agent fills in: what it guessed, what it decided without asking.>
 
+Asked and answered (2026-10-06):
+- Platform: website only. The DELIVERABLES field asks for a website, which overrides the "Mac app first" meta-instruction for this project.
+- Physics: exact Schwarzschild (non-spinning). Kerr is out of scope.
+- GitHub: local git only. No remote created, nothing pushed.
+
+Decided without asking:
+- Plain static site (HTML/CSS/JS, WebGL 2) with no build step or dependencies. KaTeX from cdnjs typesets the formulas.
+- Geometric units G = c = M = 1. Disk from r = 6M (ISCO) to 24M, peak 5,500 K before redshift (a visual choice; real disks are far hotter).
+- Ray tracing uses the Cartesian form a = -3Mh²x/r⁵ (exact orbit shape) with RK4.
+- Disk colour: Planck × CIE 1931 → sRGB. Brightness ∝ (gT)⁴. Doppler and gravitational shift combined in g.
+- Bloom and ACES tone mapping are artistic choices, adjustable in Settings.
+- Dark theme only.
+- Feedback tab keeps notes in the browser (download/copy). It sends nothing, because there's no backend and no recipient was specified.
+- Plain scrolling scrolls the page. Zoom is pinch, ⌥/⌘-scroll or buttons, so the full-screen hero doesn't trap page scroll.
+- Settings (⌘,) holds every preference. "Try it" buttons in the article flip single settings as shortcuts.
+
 CHANGELOG:
 
 - 2026-10-06 — created
+- 2026-10-06 — built the website: live WebGL ray tracer, math article with interactive figures, settings, feedback tab, tests, README and docs
 - 2026-09-15 — added meta-instruction: built-out applications include a small feedback tab
 - 2026-09-15 — added meta-instruction: no "Claude" attribution in commits, PRs, or branches
 - 2026-09-16 — added meta-instruction: always include a README when adding to GitHub
